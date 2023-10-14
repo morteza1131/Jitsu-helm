@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jitsu.fullname" . }}-bulker
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3042
+      targetPort: 3042
+      protocol: TCP
+      name: bulker
+  selector:
+    app: bulker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jitsu.fullname" . }}-syncctl
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3043
+      targetPort: 3043
+      protocol: TCP
+      name: syncctl
+  selector:
+    app: syncctl
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jitsu.fullname" . }}-rotor
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3401
+      targetPort: 3401
+      protocol: TCP
+      name: rotor
+  selector:
+    app: rotor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jitsu.fullname" . }}-console
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: console
+  selector:
+    app: console

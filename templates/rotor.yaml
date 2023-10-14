@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jitsu.fullname" . }}-rotor
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.rotor.strategyType }}
+  selector:
+    matchLabels:
+      {{- include "jitsu.selectorLabels" . | nindent 6 }}
+      app: rotor
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jitsu.selectorLabels" . | nindent 8 }}
+        app: rotor
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jitsu.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.rotor.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-rotor
+          securityContext:
+            {{- toYaml .Values.rotor.securityContext | nindent 12 }}
+          image: "{{ .Values.rotor.image.repository }}:{{ .Values.rotor.image.tag }}"
+          env:          
+            {{- range $key, $val := .Values.rotor.env }}
+            - name: {{ $key }}
+              value: "{{ $val }}"
+            {{- end }}
+            {{- range $key, $val := .Values.secret }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Chart.Name }}-secret
+                  key: {{ $key }}
+            {{- end}}
+          imagePullPolicy: {{ .Values.rotor.image.pullPolicy }}
+          ports:
+            - name: rotor
+              containerPort: 3401
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /configurator
+          #     port: rotor
+          # readinessProbe:
+          #   httpGet:
+          #     path: /configurator
+          #     port: rotor
+          resources:
+            {{- toYaml .Values.rotor.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

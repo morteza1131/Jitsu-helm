@@ -1,0 +1,301 @@
+# Default values for jitsu.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+## Secrets Used for both server and configurator
+secret: []
+
+bulker:
+  strategyType: RollingUpdate
+  replicaCount: 1
+  image:
+    repository: jitsucom/bulker
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+  env:
+    BULKER_AUTH_TOKENS: snBceR28cqBR4AVr+k8OjH6xstqsXmGGQcFGXcOL6jBtH89031fHNgTkh9OU0ZBj
+    BULKER_HTTP_PORT: 3042
+    REDIS_URL:  redis://:REDIS_PASSWORD@jitsu-redis-master:6379
+    TERM: "xterm-256color"
+    BULKER_KAFKA_BOOTSTRAP_SERVERS: jitsu-kafka:9092
+    BULKER_CONFIG_SOURCE: "redis"
+  
+  podSecurityContext: {}
+    # fsGroup: 107
+    # runAsUser: 105
+    # privileged: true
+
+  securityContext: {}
+    # capabilities:
+    #   add:
+    #     - ALL
+    #   drop:
+    #     - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # privileged: true
+    # runAsUser: 105
+    # privileged: true
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+syncctl:
+  strategyType: Recreate
+  replicaCount: 1
+  image:
+    repository: jitsucom/syncctl
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+  env:
+    HTTP_PORT: "3043"
+    TERM: "xterm-256color"
+    SYNCCTL_DATABASE_URL: "postgresql://postgres:POSTGRESS_PASSWORD@jitsu-postgresql:5432/jitsu"
+    # SYNCCTL_SIDECAR_DATABASE_URL: "postgresql://postgres:POSTGRESS_PASSWORD:-postgres}@${EXTERNAL_DATABASE_HOST}:${PG_PORT:-5437}/postgres"
+    SYNCCTL_BULKER_URL: "http://jitsu-bulker:3042"
+    SYNCCTL_BULKER_LOGS_CONNECTION_ID: task_log
+    # SYNCCTL_KUBERNETES_CLIENT_CONFIG: "${SYNCCTL_KUBERNETES_CLIENT_CONFIG:-local}"
+    # SYNCCTL_KUBERNETES_CONTEXT: "${SYNCCTL_KUBERNETES_CONTEXT}"
+    SYNCCTL_BULKER_AUTH_TOKEN: snBceR28cqBR4AVr+k8OjH6xstqsXmGGQcFGXcOL6jBtH89031fHNgTkh9OU0ZBj
+    SYNCCTL_AUTH_TOKENS: wGkdEmfOFdfUiCtolb2nE3BdZ94xCgLYV9HVbkHMj+UuqCWB7s7AmAVq2zh/VKZ0
+  
+  volumes:
+    data:
+      enabled: true
+      path: /etc/syncctl
+      size: 100Mi
+      storageClass: ""
+      annotations: {}
+      accessMode: ReadWriteOnce
+      # existingClaim: 
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 103
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+rotor:
+  strategyType: RollingUpdate
+  replicaCount: 1
+  image:
+    repository: jitsucom/rotor
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+  env:
+    DISABLE_SERVICE_prisma: "true"
+    DISABLE_SERVICE_pg: "true"
+    BULKER_URL: "http://jitsu-bulker:3042"
+    BULKER_AUTH_KEY: "snBceR28cqBR4AVr+k8OjH6xstqsXmGGQcFGXcOL6jBtH89031fHNgTkh9OU0ZBj"
+    KAFKA_BOOTSTRAP_SERVERS: "jitsu-kafka:9092"
+    REDIS_URL:  redis://:REDIS_PASSWORD@jitsu-redis-master:6379
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 103
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+console:
+  strategyType: RollingUpdate
+  replicaCount: 1
+  image:
+    repository: jitsucom/console
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+  env:
+    ROTOR_URL: "http://jitsu-rotor:3401"
+    BULKER_URL: "http://jitsu-bulker:3042"
+    BULKER_AUTH_KEY: "snBceR28cqBR4AVr+k8OjH6xstqsXmGGQcFGXcOL6jBtH89031fHNgTkh9OU0ZBj"
+    DATABASE_URL: "postgresql://postgres:POSTGRESS_PASSWORD@jitsu-postgresql:5432/jitsu"
+    REDIS_URL:  redis://:REDIS_PASSWORD@jitsu-redis-master:6379
+    TEST_CREDENTIALS: test
+    TEST_CREDENTIALS_SHOW_LOGIN: "true"
+    GITHUB_CLIENT_ID: GITHUB_CLIENT_ID
+    GITHUB_CLIENT_SECRET: GITHUB_CLIENT_SECRET
+    SYNCS_ENABLED: true
+    SYNCCTL_URL: "http://jitsu-syncctl:3043"
+    SYNCCTL_AUTH_KEY: wGkdEmfOFdfUiCtolb2nE3BdZ94xCgLYV9HVbkHMj+UuqCWB7s7AmAVq2zh/VKZ0
+    # GOOGLE_SCHEDULER_KEY: ${GOOGLE_SCHEDULER_KEY}
+    # GOOGLE_SCHEDULER_LOCATION: ${GOOGLE_SCHEDULER_LOCATION:-us-central1}
+    NEXTAUTH_URL: "https://jitsu.local/"
+    UPDATE_DB: "true"
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 103
+
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "360"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "360"
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    - host: jitsu.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: jitsu-tls
+      hosts:
+        - jitsu.local
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+
+redis:
+  clusterDomain: cluster.local
+  enabled: true
+  architecture: standalone
+  global:
+    storageClass: ""
+    redis:
+      password: "REDIS_PASSWORD"
+  master:
+    persistence:
+      enabled: true
+      size: 100Mi
+    disableCommands: []
+      # - FLUSHDB
+      # - FLUSHALL
+
+kafka:
+  enabled: true
+  controller:
+    replicaCount: 1
+    persistence:
+      size: 200Mi
+  clusterDomain: cluster.local
+  listeners:
+    client:
+      protocol: PLAINTEXT
+
+postgresql:
+  enabled: true
+  global:
+    storageClass: ""
+    postgresql:
+      auth:
+        postgresPassword: "POSTGRESS_PASSWORD"
+        username: "jitsu"
+        password: "POSTGRESS_PASSWORD"
+        database: "jitsu"
+  clusterDomain: cluster.local
+  architecture: standalone
+  primary:
+    resources:
+      limits:
+        memory: 512Mi
+        cpu: 512m
+      requests:
+        memory: 128Mi
+        cpu: 128m
+    persistence:
+      enabled: true
+      size: 200Mi

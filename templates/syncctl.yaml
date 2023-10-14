@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jitsu.fullname" . }}-syncctl
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.syncctl.strategyType }}
+  selector:
+    matchLabels:
+      {{- include "jitsu.selectorLabels" . | nindent 6 }}
+      app: syncctl
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jitsu.selectorLabels" . | nindent 8 }}
+        app: syncctl
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jitsu.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.syncctl.podSecurityContext | nindent 8 }}
+      # initContainers:
+      #   - name: volume-permission-init
+      #     image: busybox
+      #     command: ["sh", "-c", "chown -R 105:107 /home/eventnative/data/data/ && chmod g+s /home/eventnative/data/data/ "]
+      #     volumeMounts:
+      #       - name: data
+      #         mountPath: {{ .Values.syncctl.volumes.data.path | quote }}
+      containers:
+        - name: {{ .Chart.Name }}-syncctl
+          securityContext:
+            {{- toYaml .Values.syncctl.securityContext | nindent 12 }}
+          image: "{{ .Values.syncctl.image.repository }}:{{ .Values.syncctl.image.tag }}"
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.syncctl.volumes.data.path | quote }}
+          env:          
+            {{- range $key, $val := .Values.syncctl.env }}
+            - name: {{ $key }}
+              value: "{{ $val }}"
+            {{- end }}
+            {{- range $key, $val := .Values.secret }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Chart.Name }}-secret
+                  key: {{ $key }}
+            {{- end}}
+          imagePullPolicy: {{ .Values.syncctl.image.pullPolicy }}
+          ports:
+            - name: syncctl
+              containerPort: 3043
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /ready
+          #     port: syncctl
+          # readinessProbe:
+          #   httpGet:
+          #     path: /ready
+          #     port: syncctl
+          resources:
+            {{- toYaml .Values.syncctl.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.syncctl.volumes.data.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (include "jitsu.fullname" .) .Values.syncctl.volumes.data.existingClaim | printf "%s-syncctl" }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

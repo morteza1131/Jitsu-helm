@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jitsu.fullname" . }}-bulker
+  labels:
+    {{- include "jitsu.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.bulker.strategyType }}
+  selector:
+    matchLabels:
+      {{- include "jitsu.selectorLabels" . | nindent 6 }}
+      app: bulker
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jitsu.selectorLabels" . | nindent 8 }}
+        app: bulker
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jitsu.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.bulker.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-bulker
+          securityContext:
+            {{- toYaml .Values.bulker.securityContext | nindent 12 }}
+          image: "{{ .Values.bulker.image.repository }}:{{ .Values.bulker.image.tag }}"
+          env:
+            - name: BULKER_INTERNAL_TASK_LOG
+              value: '{"id":"task_log","metricsKeyPrefix":"syncs","usesBulker":true,"type":"postgres","options":{"mode":"stream"},"credentials":{"host":"jitsu-postgresql","port":5432,"sslMode":"disable","database":"jitsu","password":"aWqkKDSDc7mxnBF2","username":"jitsu","defaultSchema":"public"}}'         
+            {{- range $key, $val := .Values.bulker.env }}
+            - name: {{ $key }}
+              value: "{{ $val }}"
+            {{- end }}
+            {{- range $key, $val := .Values.secret }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Chart.Name }}-secret
+                  key: {{ $key }}
+            {{- end}}
+          imagePullPolicy: {{ .Values.bulker.image.pullPolicy }}
+          ports:
+            - name: bulker
+              containerPort: 3042
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: bulker
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: bulker
+          resources:
+            {{- toYaml .Values.bulker.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

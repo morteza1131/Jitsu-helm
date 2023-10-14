@@ -1,0 +1,28 @@
+{{- if and .Values.syncctl.volumes.data.enabled -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "jitsu.fullname" . }}-syncctl
+  labels:
+    app.kubernetes.io/name: {{ include "jitsu.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "jitsu.chart" . }}
+  annotations:
+  {{- range $key, $value := .Values.syncctl.volumes.data.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+spec:
+  accessModes:
+  - {{ .Values.syncctl.volumes.data.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.syncctl.volumes.data.size | quote }}
+{{- if .Values.syncctl.volumes.data.storageClass }}
+{{- if (eq "-" .Values.syncctl.volumes.data.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.syncctl.volumes.data.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end }}
